@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Sudoku Generator + Solver</title>
+
+  <!-- FileSaver.js library -->
+  <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      padding: 2em;
+      background: #f8f9fa;
+      max-width: 1000px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    textarea,
+    input[type='number'] {
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      padding: 0.75em;
+      margin: 0.5em 0;
+      box-sizing: border-box;
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      resize: vertical;
+      background: white;
+    }
+
+    textarea:focus,
+    input:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin: 1em 0;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.75em 1.25em;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #generateBtn {
+      background: #28a745;
+      color: white;
+    }
+
+    /* FIXED: Cancel state styling */
+    #generateBtn.cancel {
+      background: #dc3545;
+      color: white;
+    }
+
+    #generateBtn.cancel:hover {
+      background: #c82333;
+    }
+
+    #runBtn {
+      background: #4a90e2;
+      color: white;
+    }
+
+    #showMoreBtn {
+      background: #6c757d;
+      color: white;
+    }
+
+    #exportTxtBtn {
+      background: #fd7e14;
+      color: white;
+    }
+
+    #exportCsvBtn {
+      background: #20c997;
+      color: white;
+    }
+
+    #copyBtn {
+      background: #6f42c1;
+      color: white;
+    }
+
+    input[type='radio'] {
+      margin-right: 0.5em;
+    }
+
+    label {
+      margin-right: 1.5em;
+      font-weight: 500;
+    }
+
+    #summary {
+      background: #3a62e6;
+      color: white;
+      padding: 1em 1.5em;
+      border-radius: 8px;
+      margin: 1.5em 0;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Generation Progress Styles */
+    #generationProgress {
+      display: none;
+      background: white;
+      border: 2px solid #4a90e2;
+      border-radius: 8px;
+      padding: 1.5em;
+      margin: 1em 0;
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+
+    .progress-header h3 {
+      margin: 0;
+      color: #2c3e50;
+    }
+
+    .progress-bar-container {
+      background: #e9ecef;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 1em 0;
+    }
+
+    #progressBar {
+      height: 100%;
+      background: linear-gradient(90deg, #4a90e2 0%, #28a745 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 6px;
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1em;
+      font-size: 14px;
+      color: #6c757d;
+      margin-top: 1em;
+    }
+
+    .progress-stat {
+      text-align: center;
+    }
+
+    .progress-stat .number {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+      display: block;
+    }
+
+    .current-puzzle {
+      background: #f8f9fa;
+      padding: 0.5em;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      margin-top: 0.5em;
+      word-break: break-all;
+    }
+
+    #controls {
+      display: none;
+      background: white;
+      padding: 1em;
+      border-radius: 8px;
+      margin: 1em 0;
+      border: 2px solid #e9ecef;
+      flex-wrap: wrap;
+      gap: 1em;
+    }
+
+    #resultInfo {
+      color: #6c757d;
+      font-weight: 500;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 0.5em;
+      flex-wrap: wrap;
+    }
+
+    .control-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      flex-wrap: wrap;
+    }
+
+    #log {
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      padding: 1.5em;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      max-height: 500px;
+      overflow: auto;
+      margin-top: 1em;
+      line-height: 1.4;
+      color: #2c3e50;
+    }
+
+    /* Scrollbar styling */
+    #log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #log::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    #log::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    #log::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+
+    .num {
+      font-family: "Comic Sans MS", "Patrick Hand", cursive;
+      font-size: 16px;
+      font-weight: bold;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .titleLogo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5em;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      body {
+        padding: 1em;
+      }
+
+      .input-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .export-buttons {
+        justify-content: center;
+      }
+
+      button {
+        flex: 1;
+        min-width: 100px;
+      }
+
+      .progress-stats {
+        grid-template-columns: 1fr;
+        gap: 0.5em;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="titleLogo">
+    <div class="logo">
+      <svg width="50" height="50" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+        <rect width="150" height="150" rx="16" fill="#fffde7" />
+        <g stroke="#2d3142" stroke-width="1.5" fill="none" stroke-linecap="round">
+          <path d="M54 10q1 20 0 60t2 70M94 8q-2 32 1 67 2 35-2 67" />
+          <path d="M10 54q30 1 70 2t60-2M8 94q42-1 77-2t57 4" />
+        </g>
+        <path d="M14 14q2-2 4 0h114q2 0 2 2v116q0 2-2 2H18q-2 0-4-2Z" stroke="#2d3142" stroke-width="2" fill="none" />
+        <text x="35" y="35" class="num" fill="#e63946">5</text><text x="75" y="75" class="num"
+          fill="#264653">8</text><text x="115" y="115" class="num" fill="#2ecc71">2</text><text x="115" y="35"
+          class="num" fill="#2a9d8f">7</text>
+      </svg>
+
+    </div>
+    <h1>Sudoku Generator + Solver</h1>
+  </div>
+
+  <textarea id="input" placeholder="Paste puzzles here (one per line, use '.' for blanks)
+
+Or generate new puzzles below..."></textarea>
+
+  <div class="input-group">
+    <input type="number" id="generateCount" value="5" min="1" />
+    <span>puzzles</span>
+    <button id="generateBtn">Generate</button>
+  </div>
+
+  <!-- Generation Progress UI -->
+  <div id="generationProgress">
+    <div class="progress-header">
+      <h3>🔄 Generating Puzzles...</h3>
+    </div>
+
+    <div class="progress-bar-container">
+      <div id="progressBar"></div>
+    </div>
+
+    <div class="progress-stats">
+      <div class="progress-stat">
+        <span class="number"><span id="progressCurrent">0</span>/<span id="progressTotal">100</span></span>
+        <span>Puzzles (<span id="progressPercent">0</span>%)</span>
+      </div>
+      <div class="progress-stat">
+        <span class="number" id="timeRemaining">∞</span>
+        <span>Remaining</span>
+      </div>
+      <div class="progress-stat">
+        <span class="number" id="generationRate">0.00/s</span>
+        <span>Rate</span>
+      </div>
+    </div>
+
+    <div class="current-puzzle">
+      <strong>Latest:</strong> <span id="currentPuzzle">Starting...</span>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label><input type="radio" name="mode" value="solve" checked /> Solve puzzles</label>
+    <label><input type="radio" name="mode" value="count" /> Count solutions</label>
+    <button id="runBtn">Run</button>
+  </div>
+
+  <div id="summary">Ready to generate or solve puzzles.</div>
+
+  <div id="controls">
+    <div id="resultInfo">Showing results...</div>
+
+    <div class="control-section">
+      <button id="showMoreBtn">Show More</button>
+    </div>
+
+    <div class="export-buttons">
+      <button id="exportTxtBtn">📄 Export TXT</button>
+      <button id="exportCsvBtn">📊 Export CSV</button>
+      <button id="copyBtn">📋 Copy</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>
