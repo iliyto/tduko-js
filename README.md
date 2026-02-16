@@ -26,9 +26,9 @@ Inspired by the article ["Nerd Sniped: A Sudoku Story"](https://t-dillon.github.
 ## Getting Started
 
 1. Clone the repository
-2. Install dependencies: `npm install`
-3. Run development server: `npm run dev`
-4. Open `http://localhost:3000` in your browser
+2. Install dependencies: `pnpm install`
+3. Run development server: `pnpm run dev`
+4. Open `http://localhost:5173` in your browser
 
 ## Project Structure
 
